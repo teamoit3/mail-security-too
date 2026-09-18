@@ -1,10 +1,5 @@
-// api/analyze.js
-// クライアント（newmail.html）から送られてきたプロンプトを受け取り、
-// サーバー側だけが知っている GEMINI_API_KEY を付けて Gemini API に中継する。
-// APIキーはこのファイルにも書かない。Vercelの環境変数(process.env.GEMINI_API_KEY)から読む。
-
 const DEFAULT_MODEL = "gemini-3.6-flash";
-const ALLOWED_MODELS = ["gemini-3.6-flash"]; // 許可するモデルだけをホワイトリスト化
+const ALLOWED_MODELS = ["gemini-3.6-flash"]; 
 
 export default async function handler(req, res) {
   if (req.method !== "POST") {
@@ -14,8 +9,6 @@ export default async function handler(req, res) {
 
   const apiKey = process.env.GEMINI_API_KEY;
   if (!apiKey) {
-    // Vercelの Settings > Environment Variables に GEMINI_API_KEY が
-    // 設定されていない場合はここに来る。
     res.status(500).json({ error: "サーバーにGEMINI_API_KEYが設定されていません。" });
     return;
   }
@@ -26,8 +19,6 @@ export default async function handler(req, res) {
     res.status(400).json({ error: "contents が不正です。" });
     return;
   }
-
-  // クライアントから送られてきたモデル名は、念のためホワイトリストで検証する。
   const safeModel = ALLOWED_MODELS.includes(model) ? model : DEFAULT_MODEL;
 
   const endpoint =
@@ -46,9 +37,7 @@ export default async function handler(req, res) {
         }
       })
     });
-
-    // Geminiから返ってきたレスポンスを、ステータスコードも含めてそのまま中継する。
-    // newmail.html側の response.ok / response.status のチェックがそのまま使えるようにするため。
+    
     const data = await geminiResponse.text();
     res.status(geminiResponse.status);
     res.setHeader("Content-Type", "application/json");
