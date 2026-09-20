@@ -1412,7 +1412,7 @@ async function handleEmlFile(file) {
   currentFile = file;
   els.analyzeBtn.disabled = true;
   els.analyzeBtn.textContent = "メール読み込み中...";
-  els.output.innerHTML = `<div class="empty">メールを解析しています...</div>`;
+  els.output.innerHTML = `<div class="empty">解析結果がこちらに表示されます</div>`;
   els.userAnswer.value = "";
   els.userAnswer.disabled = true;
 
@@ -1443,11 +1443,7 @@ async function handleEmlFile(file) {
     emailContext.userMarks = [];
     emailContext.markingLocked = false;
 
-    const tokenCount = Object.keys(tokenMap).length;
-
-    setStatus(
-      `準備完了：抽出文字数 ${emailContext.text.length} / マスキング ${tokenCount}件`
-    );
+    setStatus("準備完了");
 
     els.analyzeBtn.disabled = false;
     els.analyzeBtn.textContent = "分析を実行";
