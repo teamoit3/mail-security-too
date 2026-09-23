@@ -271,7 +271,6 @@
 <script type="module">
 
 const GEMINI_MODEL = "gemini-3.6-flash";
-// APIキーはサーバー側(/api/analyze)にのみ置く。クライアント側には一切持たせない。
 
 const els = {
   literacy: document.getElementById("literacyLevel"),
@@ -286,8 +285,6 @@ const els = {
 };
 
 let currentFile = null;
-// emailContext = { iframeDoc, bodyRoot, pristineHTML, text, maskedText, tokenMap,
-//                   userMarks: [{start,end}, ...], markingLocked }
 let emailContext = null;
 let currentFlags = [];
 
@@ -306,7 +303,6 @@ const CATEGORY_HEX = {
   "cat-その他": "#d0b3ff"
 };
 
-/* ============ 汎用ユーティリティ ============ */
 
 function escapeHtml(str) {
   const div = document.createElement("div");
@@ -351,7 +347,7 @@ async function fetchWithRetry(url, options, maxAttempts = 3) {
     }
   }
 
-  throw lastErr || new Error("ネットワークエラーが発生しました。");
+  throw lastErr;
 }
 
 function normalizeForSearch(s) {
@@ -633,7 +629,6 @@ async function renderEmailToIframe(parsed) {
   const iframe = document.createElement("iframe");
   iframe.setAttribute("sandbox", "allow-same-origin");
   iframe.setAttribute("scrolling", "no");
-  iframe.title = "メール本文プレビュー";
 
   wrap.appendChild(iframe);
   els.viewer.appendChild(wrap);
@@ -887,7 +882,7 @@ function renderUserMarks() {
   );
 
   els.beginnerCheckSummary.textContent = emailContext.userMarks.length
-    ? `${emailContext.userMarks.length}箇所をマーキングしました。マーキングをもう一度クリックすると解除できます。マーキングし終えたら「分析」を押してください。`
+    ? `${emailContext.userMarks.length}箇所をマーキングしました。マーキングをもう一度クリックすると解除できます。マーキングし終えたら「分析」ボタンを押してください。`
     : "本文中で「怪しい」と思う文字列をドラッグして選択すると、その部分をマーキングできます。";
 }
 
@@ -947,8 +942,6 @@ function scoreUserMarks(resolvedFlags, userMarks) {
   return { correct, aiFlaggedTotal, checkedCount: userMarks.length, overChecked, comment };
 }
 
-// AI flagとユーザーマークの範囲を突き合わせ、要素的な（重なりのない）区間ごとに
-// 「両方／AIのみ（見落とし）／ユーザーのみ（見当違い）」を判定する（スイープライン）。
 function computeCorrectnessRanges(resolvedFlags, userMarks) {
   const aiRanges = resolvedFlags
     .filter(f => typeof f.start === "number" && typeof f.end === "number" && f.end > f.start)
@@ -993,8 +986,6 @@ function updateLiteracyUI() {
     renderUserMarks();
   }
 }
-
-/* ============ 個人情報マスキング ============ */
 
 function maskPII(text) {
   const patterns = [
@@ -1050,9 +1041,9 @@ function maskPII(text) {
     tokenMap[r.token] = {
       token: r.token,
       original: r.original,
-      start: r.start,           // 元テキストでの位置
+      start: r.start,           
       end: r.end,
-      maskedStart,               // マスキング後テキストでの位置
+      maskedStart,               
       maskedEnd
     };
 
@@ -1064,9 +1055,6 @@ function maskPII(text) {
   return { masked, tokenMap };
 }
 
-// マスキング後テキストでのオフセットを、置換で生じた文字数差を
-// 積み上げて元テキストでのオフセットに正確に変換する。
-// （近似ではなく、置換された各トークンの前後の長さ差をそのまま合計するだけ）
 function maskedOffsetToOriginal(tokenMap, maskedOffset) {
   const tokens = Object.values(tokenMap).sort((a, b) => a.maskedStart - b.maskedStart);
   let delta = 0;
@@ -1082,7 +1070,6 @@ function maskedOffsetToOriginal(tokenMap, maskedOffset) {
   return maskedOffset + delta;
 }
 
-/* ============ AIの出力位置を本文中の範囲に解決 ============ */
 
 function findAllOccurrences(text, needle) {
   const result = [];
@@ -1158,14 +1145,10 @@ function resolveFlag(maskedText, tokenMap, flag) {
   };
 }
 
-/* ============ 分析結果の描画 ============ */
-
 function renderAnalysis(result, flags, beginnerResult) {
   currentFlags = flags;
 
   if (beginnerResult) {
-    // 先に「正解/見落とし/見当違い」の色分けspanをpristineHTMLの上に重ね、
-    // その結果をbaseHTMLとして、AIのカテゴリ別<mark>をさらに内側にネストして重ねる。
     const correctness = computeCorrectnessRanges(flags, beginnerResult.userMarks);
     const baseHTML = wrapRangesInBody(
       emailContext.iframeDoc,
@@ -1239,7 +1222,7 @@ function renderAnalysis(result, flags, beginnerResult) {
       html += `
         <div class="flag-item" data-flag-index="${index}">
           <div class="flag-category">
-            ⚠ ${escapeHtml(flag.category || "その他")}
+             ${escapeHtml(flag.category || "その他")}
           </div>
           <div class="matched">
             ${escapeHtml(flag.display_matched_text || flag.matched_text || "")}
@@ -1247,7 +1230,7 @@ function renderAnalysis(result, flags, beginnerResult) {
           <div>${escapeHtml(reason || "理由の説明がありません。")}</div>
           <div class="advice">
             <strong>対策：</strong>
-            ${escapeHtml(flag.advice || "不明")}
+            ${escapeHtml(flag.advice || "対策の情報を取得できませんでした。")}
           </div>
         </div>
       `;
@@ -1263,8 +1246,6 @@ function renderAnalysis(result, flags, beginnerResult) {
     });
   });
 }
-
-/* ============ Gemini呼び出し ============ */
 
 async function analyzeMail(maskedText, literacyLevel, userAnswer) {
   const hasUserAnswer = !!(userAnswer && userAnswer.trim());
@@ -1321,8 +1302,6 @@ ${maskedText}
 ${hasUserAnswer ? userAnswer.trim() : "(未回答)"}
 `;
 
-  // Gemini APIには直接アクセスせず、自前サーバー(/api/analyze)を経由する。
-  // APIキーはこのリクエストのどこにも含まれない（サーバー側が付与する）。
   const response = await fetchWithRetry("/api/analyze", {
     method: "POST",
     headers: {
@@ -1346,14 +1325,14 @@ ${hasUserAnswer ? userAnswer.trim() : "(未回答)"}
 
   if (!response.ok) {
     const body = await response.text();
-    throw new Error(`Gemini APIエラー ${response.status}: ${body}`);
+    throw new Error(`APIエラー ${response.status}: ${body}`);
   }
 
   const data = await response.json();
 
   const blockReason = data?.promptFeedback?.blockReason;
   if (blockReason) {
-    throw new Error(`Geminiにより入力がブロックされました（理由: ${blockReason}）`);
+    throw new Error(`入力がブロックされました（理由: ${blockReason}）`);
   }
 
   const candidate = data?.candidates?.[0];
@@ -1361,7 +1340,7 @@ ${hasUserAnswer ? userAnswer.trim() : "(未回答)"}
 
   if (finishReason === "SAFETY" || finishReason === "RECITATION") {
     throw new Error(
-      `Geminiの安全フィルタ等により応答が生成されませんでした（finishReason: ${finishReason}）。もう一度お試しいただくか、内容を確認してください。`
+      `安全フィルタ等により応答が生成されませんでした（finishReason: ${finishReason}）。もう一度お試しいただくか、内容を確認してください。`
     );
   }
 
@@ -1392,7 +1371,6 @@ ${hasUserAnswer ? userAnswer.trim() : "(未回答)"}
       try {
         return JSON.parse(cleaned.slice(first, last + 1));
       } catch (e2) {
-        // フォールスルーして下のエラーを投げる
       }
     }
 
@@ -1406,13 +1384,11 @@ ${hasUserAnswer ? userAnswer.trim() : "(未回答)"}
   }
 }
 
-/* ============ ファイル処理 ============ */
-
 async function handleEmlFile(file) {
   currentFile = file;
   els.analyzeBtn.disabled = true;
   els.analyzeBtn.textContent = "メール読み込み中...";
-  els.output.innerHTML = `<div class="empty">解析結果がこちらに表示されます</div>`;
+  els.output.innerHTML = `<div class="empty">分析結果がこちらに表示されます</div>`;
   els.userAnswer.value = "";
   els.userAnswer.disabled = true;
 
@@ -1439,14 +1415,13 @@ async function handleEmlFile(file) {
     emailContext.maskedText = masked;
     emailContext.tokenMap = tokenMap;
 
-    // 初心者モードのドラッグ選択マーキング用の状態。
     emailContext.userMarks = [];
     emailContext.markingLocked = false;
 
     setStatus("準備完了");
 
     els.analyzeBtn.disabled = false;
-    els.analyzeBtn.textContent = "分析を実行";
+    els.analyzeBtn.textContent = "分析";
     els.userAnswer.disabled = false;
     updateLiteracyUI();
 
@@ -1465,10 +1440,6 @@ async function handleEmlFile(file) {
   }
 }
 
-/*
- * ファイル入力をtoolbarに動的追加。
- * ボタンの左に配置するためinput type=fileを使う。
- */
 const fileInput = document.createElement("input");
 fileInput.type = "file";
 fileInput.accept = ".eml,message/rfc822";
@@ -1502,7 +1473,6 @@ els.analyzeBtn.addEventListener("click", async () => {
 
   const isBeginner = els.literacy.value === "beginner";
 
-  // 初級者モードは自由記述の代わりに、ドラッグでマーキングした範囲を採点材料にする。
   const userMarksSnapshot = isBeginner ? emailContext.userMarks.slice() : [];
   const userAnswerText = isBeginner ? "" : els.userAnswer.value;
 
@@ -1561,7 +1531,7 @@ els.analyzeBtn.addEventListener("click", async () => {
     `;
   } finally {
     els.analyzeBtn.disabled = false;
-    els.analyzeBtn.textContent = "分析を実行";
+    els.analyzeBtn.textContent = "分析";
   }
 });
 
