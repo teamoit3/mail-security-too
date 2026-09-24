@@ -1484,9 +1484,8 @@ els.analyzeBtn.addEventListener("click", async () => {
   try {
     els.analyzeBtn.disabled = true;
     els.analyzeBtn.textContent = "診断中...";
-    setStatus("個人情報をマスキングした文章をAIへ送信しています...");
     els.output.innerHTML =
-      `<div class="empty">AIがメールを診断しています...</div>`;
+      `<div class="empty">メールを診断しています...</div>`;
 
     await sleep(100);
 
