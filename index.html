@@ -236,11 +236,11 @@
 </div>
 
 <div class="answer-box" id="answerBoxAdvanced">
-  <label for="userAnswer">あなたの気づき：このメールの怪しいと思う箇所と、その理由を入力してください。「分析」ボタンを押すと、分析結果とフィードバックが表示されます。</label>
+  <label for="userAnswer">あなたの気づき：このメールの怪しいと思う箇所と、その理由を入力してください。「診断」ボタンを押すと、診断結果とフィードバックが表示されます。</label>
   <textarea id="userAnswer" rows="3" placeholder="例：「特別ギフトをプレゼント」という甘い誘い文句で気を引こうとしている…" disabled></textarea>
 </div>
 <div class="answer-box" id="answerBoxBeginner" style="display:none;">
-  <label>あなたの気づき：左のメール文で「怪しい」と思った文字列を、マウスでドラッグして選択（マーキング）してください（複数箇所可）<br>マーキングをもう一度クリックすると解除できます。マーキングし終えたら「分析」を押してください。</label>
+  <label>あなたの気づき：左のメール文で「怪しい」と思った文字列を、マウスでドラッグして選択（マーキング）してください（複数箇所可）<br>マーキングをもう一度クリックすると解除できます。マーキングし終えたら「診断」を押してください。</label>
   <div class="small" id="beginnerCheckSummary">メールファイルを読み込むとチェックできるようになります。</div>
 </div>
 
@@ -260,9 +260,9 @@
   </section>
 
   <section class="panel">
-    <div class="panel-title">分析結果</div>
+    <div class="panel-title">診断結果</div>
     <div id="output">
-      <div class="empty">メールファイルを選択し、怪しい箇所とその理由を入力（またはマーキング）して「分析」を押してください。</div>
+      <div class="empty">メールファイルを選択し、怪しい箇所とその理由を入力（またはマーキング）して「診断」を押してください。</div>
     </div>
   </section>
 </div>
@@ -882,7 +882,7 @@ function renderUserMarks() {
   );
 
   els.beginnerCheckSummary.textContent = emailContext.userMarks.length
-    ? `${emailContext.userMarks.length}箇所をマーキングしました。マーキングをもう一度クリックすると解除できます。マーキングし終えたら「分析」ボタンを押してください。`
+    ? `${emailContext.userMarks.length}箇所をマーキングしました。マーキングをもう一度クリックすると解除できます。マーキングし終えたら「診断」ボタンを押してください。`
     : "本文中で「怪しい」と思う文字列をドラッグして選択すると、その部分をマーキングできます。";
 }
 
@@ -1388,7 +1388,7 @@ async function handleEmlFile(file) {
   currentFile = file;
   els.analyzeBtn.disabled = true;
   els.analyzeBtn.textContent = "メール読み込み中...";
-  els.output.innerHTML = `<div class="empty">分析結果がこちらに表示されます</div>`;
+  els.output.innerHTML = `<div class="empty">診断結果がこちらに表示されます</div>`;
   els.userAnswer.value = "";
   els.userAnswer.disabled = true;
 
@@ -1421,7 +1421,7 @@ async function handleEmlFile(file) {
     setStatus("準備完了");
 
     els.analyzeBtn.disabled = false;
-    els.analyzeBtn.textContent = "分析";
+    els.analyzeBtn.textContent = "診断";
     els.userAnswer.disabled = false;
     updateLiteracyUI();
 
@@ -1444,7 +1444,7 @@ const fileInput = document.createElement("input");
 fileInput.type = "file";
 fileInput.accept = ".eml,message/rfc822";
 fileInput.id = "emlInput";
-fileInput.title = "分析するメール(.eml)";
+fileInput.title = "診断するメール(.eml)";
 fileInput.style.position = "absolute";
 fileInput.style.width = "1px";
 fileInput.style.height = "1px";
@@ -1483,10 +1483,10 @@ els.analyzeBtn.addEventListener("click", async () => {
 
   try {
     els.analyzeBtn.disabled = true;
-    els.analyzeBtn.textContent = "分析中...";
+    els.analyzeBtn.textContent = "診断中...";
     setStatus("個人情報をマスキングした文章をAIへ送信しています...");
     els.output.innerHTML =
-      `<div class="empty">AIがメールを分析しています...</div>`;
+      `<div class="empty">AIがメールを診断しています...</div>`;
 
     await sleep(100);
 
@@ -1517,21 +1517,21 @@ els.analyzeBtn.addEventListener("click", async () => {
     renderAnalysis(result, resolved, beginnerResult);
 
     setStatus(
-      `分析完了`
+      `診断完了`
     );
 
   } catch (err) {
     console.error(err);
-    setStatus("分析エラー：" + err.message);
+    setStatus("診断エラー：" + err.message);
     els.output.innerHTML = `
       <div class="empty">
-        <strong>分析に失敗しました。</strong><br><br>
+        <strong>診断に失敗しました。</strong><br><br>
         ${escapeHtml(err.message)}
       </div>
     `;
   } finally {
     els.analyzeBtn.disabled = false;
-    els.analyzeBtn.textContent = "分析";
+    els.analyzeBtn.textContent = "診断";
   }
 });
 
